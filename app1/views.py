@@ -6,11 +6,13 @@ from django.contrib import messages
 from decouple import config
 from google.genai import Client
 from django.http import JsonResponse
-
+from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
 # Create your views here.
 def home(request):
     return render(request, 'home.html')
 
+@login_required(login_url='signin')
 def chattoai(request):
     api_key=config('CHAT_TO_AI')
     # print(api_key)
@@ -34,6 +36,26 @@ def chattoai(request):
     return render(request, "chattoai.html")
 
     # return render(request, 'chattoai.html')
+
+@login_required(login_url='signin')
+def builtownai(request):
+
+    api_key=config('BUILT_OWN_AI')
+    client=Client(api_key=api_key)
+    system_prompt="Your an AI assistant that work on the following detail. You always talk with the emojis and the behave like professional teacher"+str(request.POST.get('first_message'))
+
+    if request.method == "POST":
+        user_input = request.POST.get("message", "")
+        response = client.models.generate_content(
+            model="gemini-1.5-flash", 
+            contents=[
+                system_prompt,
+                user_input
+            ],
+        )
+        response = {"response": f"{response.text}"}
+        return JsonResponse(response)
+    return render(request, "builtownai.html")
 
 @csrf_exempt
 def sign_in(request):
@@ -120,3 +142,12 @@ def signup(request):
             return HttpResponse(f"<h1>Database Error: {err}</h1>")
 
     return render(request, 'signup.html')
+
+@login_required(login_url='signin')
+def aboutus(request):
+    return render(request, 'aboutus.html')
+
+@login_required(login_url='signin')
+def custom_logout(request):
+    logout(request)
+    return redirect('signin')
