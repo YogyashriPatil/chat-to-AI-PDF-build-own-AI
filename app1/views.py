@@ -12,7 +12,7 @@ from django.contrib.auth.decorators import login_required
 def home(request):
     return render(request, 'home.html')
 
-@login_required(login_url='signin')
+# @login_required(login_url='signin')
 def chattoai(request):
     api_key=config('CHAT_TO_AI')
     # print(api_key)
@@ -37,7 +37,7 @@ def chattoai(request):
 
     # return render(request, 'chattoai.html')
 
-@login_required(login_url='signin')
+# @login_required(login_url='signin')
 def builtownai(request):
 
     api_key=config('BUILT_OWN_AI')
@@ -56,6 +56,10 @@ def builtownai(request):
         response = {"response": f"{response.text}"}
         return JsonResponse(response)
     return render(request, "builtownai.html")
+
+# @login_required(login_url='signin')
+def chattopdf(request):
+    return render(request, 'chattopdf.html')
 
 @csrf_exempt
 def sign_in(request):
@@ -143,11 +147,12 @@ def signup(request):
 
     return render(request, 'signup.html')
 
-@login_required(login_url='signin')
+
+# @login_required(login_url='signin')
 def aboutus(request):
     return render(request, 'aboutus.html')
 
-@login_required(login_url='signin')
+# @login_required(login_url='signin')
 def custom_logout(request):
     logout(request)
     return redirect('signin')

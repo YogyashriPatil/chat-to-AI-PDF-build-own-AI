@@ -131,11 +131,16 @@
   <div id="sidebar" class="sidebar bg-black text-white w-64 flex flex-col justify-between shadow-lg">
     <div class="p-6">
       <img src="https://i.pravatar.cc/100" alt="User Profile" class="rounded-full w-20 h-20 mx-auto mb-4 border-4 border-purple-400" />
-      <h2 id="username-display" class="text-xl font-semibold text-center">{{ user.uname }} </h2>
+      {% if user.is_authenticated %}
+        <h2 id="username-display" class="text-xl font-semibold text-center">Welcome, {{ user.uname }} </h2>
+      {% else %}
+        <h2 id="username-display" class="text-xl font-semibold text-center">Welcome, Guest</h2>
+      {% endif %}
       <ul class="mt-4">
         <li class="mb-4 px-4 py-2 rounded hover:bg-purple-600 cursor-pointer">Home</li>
         <li class="mb-4 px-4 py-2 rounded hover:bg-purple-600 cursor-pointer"><a href="{% url 'chattoai' %}">Chat to AI</a></li>
         <li class="mb-4 px-4 py-2 rounded hover:bg-purple-600 cursor-pointer"><a href="{% url 'builtownai' %}">Build Own AI</a></li>
+        <li class="mb-4 px-4 py-2 rounded hover:bg-purple-600 cursor-pointer"><a href="{% url 'chattopdf' %}">Chat to PDF</a></li>
         <li class="mb-4 px-4 py-2 rounded hover:bg-purple-600 cursor-pointer"><a href="{% url 'aboutus' %}">About US</a></li>
       </ul>
     </div>
@@ -150,8 +155,8 @@
       Ask questions, upload files, and extract knowledge instantly. All in one AI assistant.
     </p>
     <div class="mt-8">
-      <button onclick="toggleSidebar()" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg font-semibold rounded-full shadow-lg hover:scale-105 transition">
-        🚀 Start Chatting
+      <button class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg font-semibold rounded-full shadow-lg hover:scale-105 transition">
+        <a href="{% url 'chattoai' %}"> Start Chatting </a>
       </button>
     </div>
   </main>
