@@ -6,10 +6,21 @@ from django.contrib import messages
 from decouple import config
 from google.genai import Client
 from django.http import JsonResponse
-from django.contrib.auth import logout
+from django.contrib.auth import logout,authenticate,login
 from django.contrib.auth.decorators import login_required
+from .forms import FileUploadForm
+from django.conf import settings
+from shutil import copyfile
+import os
 # Create your views here.
 def home(request):
+    user_email = request.COOKIES.get('user_email', None)  # Retrieve cookie
+    is_logged_in = user_email is not None
+
+    return render(request, 'home.html', {
+        'is_logged_in': is_logged_in,
+        'user_email': user_email,
+    })
     return render(request, 'home.html')
 
 # @login_required(login_url='signin')
@@ -59,34 +70,55 @@ def builtownai(request):
 
 # @login_required(login_url='signin')
 def chattopdf(request):
-    return render(request, 'chattopdf.html')
+    if request.method == 'POST':
+        uploaded_file = request.FILES['file']  # 'file' is the name attribute of the input in your form
+        file_path = os.path.join(settings.MEDIA_ROOT, uploaded_file.name)
+        print(f"Saving file to: {file_path}")
+
+        with open(file_path, 'wb+') as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
+
+        return render(request, 'upload.html', {'message': 'File uploaded successfully!'})
+    
+    return render(request, 'upload.html')
 
 @csrf_exempt
 def sign_in(request):
     if request.method == 'POST':
-        useremail = request.POST['signin-email']
-        passw = request.POST['signin-password']
+        useremail = request.POST.get('signin-email')
+        passw = request.POST.get('signin-password')
 
         print("Email:", useremail, "Password:", passw)
-    
-        mydb = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
-            database="wtl_project",
-        )
-
-        mycur=mydb.cursor()
-        mycur.execute("select * from usermast where uemail='"+useremail+"' and upass='"+passw+"' ;")
-
-        mydata=mycur.fetchone()
-        print(mydata)
-        if mydata is not None:
-            return render(request, 'home.html',{"email":useremail})
-            # return render(request, 'home.html')
-        else:
-            return render(request, 'signin.html', {'error': 'Invalid credentials'})
-    
+        try:
+            # Connect to MySQL database
+            mydb = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                database="wtl_project",
+            )
+            mycur=mydb.cursor()
+            mycur.execute("select * from usermast where uemail='"+useremail+"' and upass='"+passw+"' ;")
+            print(mycur)
+            mydata=mycur.fetchone()
+            print(mydata)
+            
+            if mydata is not None:
+                print("email and password is correct")
+                response= redirect('/home/')
+                response.set_cookie('user_email',useremail)
+                return response
+                # return render(request, 'home.html',{"email":useremail})
+                # return render(request, 'home.html')
+            else:
+                return render(request, 'signin.html', {'error': 'Invalid credentials'})
+        except mysql.connector.Error as err:
+            return render(request, 'signin.html', {'error': f"Database error: {err}"})
+        finally:
+            if mydb.is_connected():
+                mycur.close()
+                mydb.close()
     return render(request, 'signin.html')
 
 def signup(request):
@@ -154,5 +186,8 @@ def aboutus(request):
 
 # @login_required(login_url='signin')
 def custom_logout(request):
-    logout(request)
-    return redirect('signin')
+    response = redirect('/signin/')
+    response.delete_cookie('user_email')  # Clear cookie
+    return response
+    # logout(request)
+    # return redirect('signin')

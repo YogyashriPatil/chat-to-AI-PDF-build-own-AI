@@ -69,8 +69,7 @@
   </div>
 
   <script>
-    
-    document.getElementById("signin-form").addEventListener("submit", async function (e) {
+      document.getElementById("signin-form").addEventListener("submit", async function (e) {
       e.preventDefault(); // Prevent the default form submission
 
       const formData = new FormData(this); // Collect form data
@@ -84,24 +83,26 @@
           body: formData,
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const textResponse = await response.text();
-        if (textResponse.includes("home.html")) {
-          // Redirect to home page if successful
-          window.location.href = "/home/";
+        if (response.redirected) {
+          // Redirected to home page
+          window.location.href = response.url;
+        } else if (response.ok) {
+          // Check for errors in the response HTML (if backend renders an error message)
+          const textResponse = await response.text();
+          if (textResponse.includes("error-msg")) {
+            const errorMsg = document.getElementById("error-msg");
+            errorMsg.classList.remove("hidden");
+            errorMsg.textContent = "Invalid email or password.";
+          }
         } else {
-          // Display error message if credentials are invalid
-          const errorMsg = document.getElementById("error-msg");
-          errorMsg.classList.remove("hidden");
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
       } catch (error) {
         console.error("Error during sign-in:", error);
         alert("An error occurred during sign-in. Please try again.");
       }
     });
+
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>

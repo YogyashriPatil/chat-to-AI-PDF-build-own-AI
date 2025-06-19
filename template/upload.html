@@ -261,10 +261,14 @@
     <section id="chat-container">
       <div id="messages"></div>
       <div id="input-area">
-        <label for="upload-input" id="upload-btn" title="Upload File">📎</label>
-        <input type="file" id="upload-input" multiple />
-        <textarea id="user-input" placeholder="Type your message here..." autocomplete="off" spellcheck="false" rows="1"></textarea>
-        <button id="send-btn" title="Send message">🚀</button>
+        <form method="post" enctype="multipart/form-data" id="file-upload-form" class="flex items-center gap-2">
+          {% csrf_token %}
+          <label for="upload-input" id="upload-btn" title="Upload File">📎</label>
+          <!-- {{ form.file }} -->
+          <input type="file" name="file" id="upload-input" multiple />
+          <textarea id="user-input" placeholder="Type your message here..." autocomplete="off" spellcheck="false" rows="1"></textarea>
+          <button id="send-btn" title="Send message">🚀</button>
+        </form>
       </div>
     </section>
   </main>
@@ -321,8 +325,13 @@
 
     uploadInput.addEventListener('change', () => {
       const files = Array.from(uploadInput.files);
+      console.log("Selected files:", files); 
       if (files.length > 0) {
-        appendMessage(`📎 Upload successful (${files.length} file${files.length > 1 ? 's' : ''})`, 'user');
+        files.forEach((file) => {
+          console.log("Appending message for file:", file.name);
+          appendMessage(`📎 Upload successful : ${file.name} (${files.length} file${files.length > 1 ? 's' : ''})`, 'user');
+        });
+        document.getElementById('file-upload-form').submit();
       }
     });
   </script>
