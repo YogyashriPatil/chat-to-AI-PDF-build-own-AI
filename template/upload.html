@@ -266,7 +266,7 @@
           <label for="upload-input" id="upload-btn" title="Upload File">📎</label>
           <!-- {{ form.file }} -->
           <input type="file" name="file" id="upload-input" multiple />
-          <textarea id="user-input" placeholder="Type your message here..." autocomplete="off" spellcheck="false" rows="1"></textarea>
+          <textarea id="user-input" placeholder="Type your message here..." autocomplete="off" spellcheck="false" rows="1" cols="50" ></textarea>
           <button id="send-btn" title="Send message">🚀</button>
         </form>
       </div>
@@ -280,60 +280,157 @@
   <div class="shape triangle" style="top: 30%; left: 30%;"></div>
   <div class="shape" style="bottom: 10%; right: 12%; width: 90px; height: 90px;"></div>
   <div class="shape ellipse" style="top: 25%; right: 20%; width: 160px; height: 100px;"></div>
+  
+    <script>
+      const messages = document.getElementById('messages');
+      const input = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const uploadInput = document.getElementById('upload-input');
+      const form = document.getElementById('file-upload-form');
 
-  <script>
-    const messages = document.getElementById('messages');
-    const input = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
-    const uploadInput = document.getElementById('upload-input');
-
-    function appendMessage(text, sender = 'user') {
-      const msgDiv = document.createElement('div');
-      msgDiv.classList.add('message');
-      msgDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
-      msgDiv.innerHTML = `<p>${sender === 'user' ? 'You' : 'AI'}</p><p>${text}</p>`;
-      messages.appendChild(msgDiv);
-      messages.scrollTop = messages.scrollHeight;
-    }
-
-    function botReply(userText) {
-      setTimeout(() => {
-        appendMessage("Echo: " + userText, 'bot');
-      }, 700);
-    }
-
-    function sendMessage() {
-      const text = input.value.trim();
-      if (!text) return;
-      appendMessage(text, 'user');
-      input.value = '';
-      botReply(text);
-    }
-
-    sendBtn.addEventListener('click', sendMessage);
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
+      function appendMessage(text, sender = 'user') 
+      {
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message');
+        msgDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+        msgDiv.innerHTML = `<p>${sender === 'user' ? 'You' : 'AI'}</p><p>${text}</p>`;
+        messages.appendChild(msgDiv);
+        messages.scrollTop = messages.scrollHeight;
+        // Save the message to localStorage
+        saveMessage(text, sender);
       }
-    });
 
-    input.addEventListener('input', () => {
-      input.style.height = 'auto';
-      input.style.height = input.scrollHeight + 'px';
-    });
-
-    uploadInput.addEventListener('change', () => {
-      const files = Array.from(uploadInput.files);
-      console.log("Selected files:", files); 
-      if (files.length > 0) {
-        files.forEach((file) => {
-          console.log("Appending message for file:", file.name);
-          appendMessage(`📎 Upload successful : ${file.name} (${files.length} file${files.length > 1 ? 's' : ''})`, 'user');
-        });
-        document.getElementById('file-upload-form').submit();
+      // Save a message to localStorage
+      function saveMessage(text, sender) 
+      {
+        const storedMessages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+        storedMessages.push({ text, sender });
+        localStorage.setItem('chatMessages', JSON.stringify(storedMessages));
       }
-    });
-  </script>
-</body>
+      // Load messages from localStorage
+      function loadMessages() 
+      {
+        const storedMessages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+        if (storedMessages.length === 0) {
+          // Show the default bot message
+          appendMessage("Upload a PDF you want to chat with.", 'bot');
+        } else {
+          storedMessages.forEach(msg => {
+            appendMessage(msg.text, msg.sender);
+          });
+        }
+      }
+
+      // Clear chat messages from localStorage
+      function clearChatMessages() {
+        localStorage.removeItem('chatMessages');
+        console.log("Chat messages cleared.");
+      }
+
+      form.addEventListener('submit', async (e) => 
+      {
+        e.preventDefault(); // Prevent the default form submission behavior
+        e.stopPropagation(); // Prevent bubbling up in case of other listeners
+
+        const formData = new FormData(form);
+        const files = Array.from(uploadInput.files);
+
+        if (files.length > 0) {
+
+          files.forEach((file) => {
+            console.log("File selected:", file.name);
+            appendMessage(`📎 Uploaded: ${file.name}`, 'user');
+          });
+
+          try {
+            const response = await fetch('/chattopdf/', {
+              method: 'POST',
+              body: formData,
+              headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+              },
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              appendMessage(`✅ File "${file.name}" uploaded successfully!`, 'bot');
+              appendMessage('Ask your doubt related to this PDF.', 'bot');
+              // Set a flag in localStorage to display the message after reload
+              localStorage.setItem('uploadSuccess', 'true');
+              // Optionally save file name for future use
+              localStorage.setItem('uploadedFileName', file.name);
+            } 
+            else {
+              appendMessage("❌ Failed to upload the file. Please try again.", 'bot');
+            }
+          } 
+          catch (error) {
+            appendMessage(" ⚠️ An error occurred during file upload.", 'bot');
+          }
+        }
+      });
+
+      function sendMessage() {
+        const text = input.value.trim();
+        if (!text) return;
+        appendMessage(text, 'user');
+        input.value = '';
+        botReply(text);
+      }
+
+      function botReply(userText) {
+        setTimeout(() => {
+          appendMessage("Echo: " + userText, 'bot');
+        }, 700);
+      }
+
+      input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
+      });
+
+
+      sendBtn.addEventListener('click', sendMessage);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+
+      uploadInput.addEventListener('change', () => {
+        const files = Array.from(uploadInput.files);
+        console.log("Selected files:", files); 
+        if (files.length > 0) {
+          files.forEach((file) => {
+            console.log("Appending message for file:", file.name);
+            appendMessage(`📎 Upload successful : ${file.name} (${files.length} file${files.length > 1 ? 's' : ''})`, 'user');
+          });
+          document.getElementById('file-upload-form').submit();
+        }
+      });
+      function loadMessages() {
+        const storedMessages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+        if (storedMessages.length === 0) {
+          // If no messages exist, show the default bot message
+          const defaultMessage = "Upload a PDF you want to chat with.";
+          appendMessage(defaultMessage, 'bot');
+        } else {
+          storedMessages.forEach(msg => {
+            appendMessage(msg.text, msg.sender);
+          });
+        }
+      }
+      window.addEventListener('load', () => 
+      {
+        const uploadSuccess = localStorage.getItem('uploadSuccess');
+        if (uploadSuccess) {
+          appendMessage('✅ Your PDF was successfully uploaded!', 'bot');
+          appendMessage('🤖 Ask your doubt related to this PDF.', 'bot');
+          localStorage.removeItem('uploadSuccess'); // Clear the flag
+        }
+      });
+    </script>
+  </body>
 </html>

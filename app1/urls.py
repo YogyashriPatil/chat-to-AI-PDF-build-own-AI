@@ -14,5 +14,6 @@ urlpatterns = [
     path('chattopdf/', views.chattopdf, name='chattopdf'),
     path('builtownai/', views.builtownai, name='builtownai'),
     path('aboutus/', views.aboutus,name="aboutus"),
+    path('aboutinfo/', views.aboutinfo,name="aboutinfo"),
     # path('home/', views.home, name='home'),
 ]
