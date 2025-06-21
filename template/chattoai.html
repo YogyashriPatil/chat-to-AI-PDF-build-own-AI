@@ -266,13 +266,13 @@
             settingsPanel.classList.toggle('hidden');
         }
 
-    // Change the temperature value
-    function changeTemperature(delta) {
-        const temperatureValue = document.getElementById('temperature-value');
-        let currentValue = parseFloat(temperatureValue.textContent);
-        currentValue = Math.max(0.1, Math.min(2.0, currentValue + delta)); // Clamp between 0.1 and 2.0
-        temperatureValue.textContent = currentValue.toFixed(1);
-    }
+        // Change the temperature value
+        function changeTemperature(delta) {
+            const temperatureValue = document.getElementById('temperature-value');
+            let currentValue = parseFloat(temperatureValue.textContent);
+            currentValue = Math.max(0.1, Math.min(2.0, currentValue + delta)); // Clamp between 0.1 and 2.0
+            temperatureValue.textContent = currentValue.toFixed(1);
+        }
         function sendMessage() {
             const userInput = document.getElementById('user-input').value.trim();
             const messages = document.getElementById('messages');

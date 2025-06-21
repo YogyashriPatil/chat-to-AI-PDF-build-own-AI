@@ -18,8 +18,6 @@ from pathlib import Path
 from langchain_mistralai import MistralAIEmbeddings
 from qdrant_client import QdrantClient
 from langchain_qdrant import QdrantVectorStore
-
-# Create your views here.
 def home(request):
     user_email = request.COOKIES.get('user_email', None)  # Retrieve cookie
     is_logged_in = user_email is not None
@@ -49,108 +47,162 @@ def chattoai(request):
                 user_input
             ],
         )
-        # Return a dictionary with a key and the AI response text as value
         return JsonResponse({"response": response.text})
     return render(request, "chattoai.html")
 
-    # return render(request, 'chattoai.html')
-
+@csrf_exempt
 def aboutinfo(request):
+    if request.method == 'POST':
+        try:
+            raw_body=request.body.decode('utf-8')
+            print("Raw request body:", raw_body) # Debugging
+            data = json.loads(raw_body)
+            responses = data.get('responses', '')
+            print("Received responses:", responses)
+            
+            response_dict = {}
+            for line in responses.splitlines():
+                key, value = line.split(':', 1)  # Split into key and value
+                response_dict[key.strip()] = value.strip()
+
+                    # Access individual values
+            name = response_dict.get('name')
+            age = response_dict.get('age')
+            gender = response_dict.get('gender')
+            like = response_dict.get('likes')
+            nature = response_dict.get('nature')
+            # global system_prompt_for_own
+            system_prompt_for_own = f"""
+                You are an AI Assistant of {name}.
+                Your age is {age}. You always talk like your age number.
+                Your gender is {gender} version, So talk based on your gender.
+                and your hobbies are {like}.
+                and your mood is always a {nature} . Always talk in your moode. 
+                Use a some time emojis for chatting in a one chat 1 or 2 emojis only.
+                And the give the proper answer based on the provided contain.
+            """
+            request.session['system_prompt_for_own'] = system_prompt_for_own
+            # global system_prompt_for_own = system_prompt1
+            print("System Prompt:", system_prompt_for_own)
+        except json.JSONDecodeError as e:
+                print("JSON Decode Error:", e)
+                return JsonResponse({"error": "Invalid JSON format"}, status=400)
+
     return render(request, 'aboutinfo.html')
+
 # @login_required(login_url='signin')
 @csrf_exempt
 def builtownai(request):
+    system_prompt_for_own=request.session.get('system_prompt_for_own', None)
+    # print("this is ",system_prompt_for_own)
+    system_prompt=system_prompt_for_own
     if request.method == 'POST':
-        data = json.loads(request.body)
-        responses = data.get('responses', '')
-        print("Received responses:", responses)
-        # return render(request, "builtownai.html")
-        return JsonResponse({'status': 'success', 'message': 'Responses received'})
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
-    api_key=config('BUILT_OWN_AI')
-    client=Client(api_key=api_key)
-    system_prompt="Your an AI assistant that work on the following detail. You always talk with the emojis and the behave like professional teacher"+str(request.POST.get('first_message'))
-
-    if request.method == "POST":
-        user_input = request.POST.get("message", "")
+        api_key=config('BUILT_OWN_AI')
+        # print(api_key)
+        client = Client(api_key=api_key)
+        user_input =request.POST.get("message", "")
+        print(user_input)
         response = client.models.generate_content(
-            model="gemini-1.5-flash", 
-            contents=[
-                system_prompt,
-                user_input
-            ],
-        )
-        response = {"response": f"{response.text}"}
-        return JsonResponse(response)
+            model="gemini-1.5-flash",
+               contents=[
+                    system_prompt,
+                    user_input
+                ],
+            )
+        # print("AI Response:", response.text)
+        return JsonResponse({"response": response.text})
     return render(request, "builtownai.html")
 
 # @login_required(login_url='signin')
+@csrf_exempt 
 def chattopdf(request):
-    # if request.method == 'POST':
-    file = request.FILES.get('file')  # Check for uploaded file
-    message = request.POST.get('message') 
+    vector_store = None  # Define vector_store outside the conditions to reuse it later
+    if request.method == 'POST':
+        if request.session.get('pdf_uploaded', False):
+            return JsonResponse({
+                'response': 'A PDF has already been uploaded. Please ask questions about the current PDF.(if the another pdf uploaded please refresh) '
+            }, status=200)
+        # Handle File Upload
+        file = request.FILES.get('file')  # Check for uploaded file
+        if file:
+            uploaded_file = request.FILES['file']  # 'file' is the name attribute of the input in your form
+            file_path = os.path.join(settings.MEDIA_ROOT, uploaded_file.name)
+            file_name = uploaded_file.name
+            print(file_name)
 
-    if file:
-        uploaded_file = request.FILES['file']  # 'file' is the name attribute of the input in your form
-        file_path = os.path.join(settings.MEDIA_ROOT, uploaded_file.name)
-        print(f"Saving file to: {file_path}")
-        file_name = uploaded_file.name
-        print(file_name)
-        with open(file_path, 'wb+') as destination:
-            for chunk in uploaded_file.chunks():
-                destination.write(chunk)
-        
-        api_key=config('CHAT_TO_AI')
-        media_path = Path("E:/final wtl project/talktoai/media")
-        pdf_path= media_path / file_name;
-        print(pdf_path)
+            with open(file_path, 'wb+') as destination:
+                for chunk in uploaded_file.chunks():
+                    destination.write(chunk)
+            request.session['pdf_uploaded'] = True
 
-        loader=PyPDFLoader(file_path=pdf_path)
-        docs=loader.load()
-        # print(docs[0])
+            media_path = Path(settings.MEDIA_ROOT)
+            pdf_path= media_path / file_name;
+            print(pdf_path)
 
-        text_spiltter=RecursiveCharacterTextSplitter(
-             chunk_size=1000,
-             chunk_overlap=200,
-        )
-        split_docs=text_spiltter.split_documents(documents=docs)
-        
-        try:
+            # Load and process PDF
+            loader=PyPDFLoader(file_path=pdf_path)
+            docs=loader.load()
+            # print(docs[0])
+
+            text_spiltter=RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=200,
+            )
+            split_docs=text_spiltter.split_documents(documents=docs)
+            
             api_key =config("MISTRAL_API_KEY") 
             model = "mistral-embed"
             embedder = MistralAIEmbeddings(
                 model=model,
                 api_key=api_key
             )
+            
             vector_Store=QdrantVectorStore.from_documents(
                 collection_name="talk_to_pdf",
                 url="http://localhost:6333",
                 embedding=embedder,
                 documents=[]
             )
+
             vector_Store.add_documents(split_docs)
             print("Injection done")
-            search_result=vector_Store.similarity_search(
-                query="State a human right commision"
-            )
-            print("Search result",search_result)
 
+            return JsonResponse({'response':f"Successfully proceed file : {file_name}"})
+            # return render(request, 'upload.html', {'success': "Upload a PDF and ask questions!"})
 
-        except Exception as e:
-            print("Error creating embeddings:", e)
+        message=request.POST.get('message')
+        if message:
+            # print(message)
+            
+            # if not vector_Store:
+            #     return render(request, 'upload.html', {'error': "Please upload a PDF first."})
+                
+            # search_result=vector_Store.similarity_search(query=message)
+            
+            # print(f"User query: {message}")
+            
+            # api_key=config('CHAT_TO_AI')
+            # client = Client(api_key=api_key)
+            # system_prompt = f"""
+            #         Your an AI assistant whose work on the find the answer based on the relevant chunk.
+            #         You give the user friendly message.
+            #         And the also the answer give to the {search_result}
+            #     """
+            # response = client.models.generate_content(
+            #     model="gemini-1.5-flash",
+            #         contents=[
+            #             system_prompt,
+            #             message
+            #         ],
+            #     )
+            # print(f"AI response: {response.text}")
+            # return JsonResponse({"response": response.text})
+            response_text = f"AI response to your query: {message}"
+            return JsonResponse({'response': response_text}, status=200)
 
-    if message:
-        # try:
-        #     search_results = vector_store.similarity_search(query=message, k=3)  # Top 3 results
-        #     context = " ".join([doc.page_content for doc in search_results])  # Combine results
-
-        #      # Use a language model to generate an answer
-        print("Received message:", message)
-        # response_data['message'] = message
-
-    return render(request, 'upload.html', {'message': 'File uploaded successfully!'})
-    
-    return render(request, 'upload.html')
+        return JsonResponse({'error': 'No file or message provided.'}, status=400)
+           
+    return render(request, 'upload.html', {'success': "Upload a PDF and ask questions!"})
 
 @csrf_exempt
 def sign_in(request):

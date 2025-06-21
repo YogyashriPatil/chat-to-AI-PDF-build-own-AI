@@ -287,7 +287,7 @@
       setTimeout(() => appendMessage(personaQuestions[0].question, 'bot'), 800);
     }
     function sendAllResponsesToBuiltownai() {
-        fetch('/builtownai/', {
+        fetch('/aboutinfo/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -297,12 +297,12 @@
         .then(response => {
             if (response.ok) {
                 console.log("Responses sent successfully!");
-                appendMessage("🎉 Your responses have been submitted to BuiltownAI!", 'bot');
+                // appendMessage("🎉 Your responses have been submitted to BuiltownAI!", 'bot');
                 // sendAllResponsesToBuiltownai(); 
                  // Redirect to builtownai.html
-                // setTimeout(() => {
-                // window.location.href = '/builtownai.html';
-                // }, 2000);
+                setTimeout(() => {
+                  window.location.href = "{% url 'builtownai' %}";
+                }, 2000);
             } else {
             appendMessage("⚠️ Failed to send responses. Please try again later.", 'bot');
             }
@@ -391,6 +391,7 @@
         }, 1000);
       }, 500);
     }
+
     // console.log(allResponses);
   </script>
   

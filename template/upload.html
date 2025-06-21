@@ -266,8 +266,8 @@
           <label for="upload-input" id="upload-btn" title="Upload File">📎</label>
           <!-- {{ form.file }} -->
           <input type="file" name="file" id="upload-input" multiple />
-          <textarea id="user-input" placeholder="Type your message here..." autocomplete="off" spellcheck="false" rows="1" cols="50" ></textarea>
-          <button id="send-btn" title="Send message">🚀</button>
+          <textarea id="user-input" name="message" placeholder="Type your message here..." autocomplete="off" spellcheck="false" rows="1" cols="50" ></textarea>
+          <button id="send-btn" title="Send message" ondblclick="sendMessageofai()">🚀</button>
         </form>
       </div>
     </section>
@@ -299,7 +299,6 @@
         // Save the message to localStorage
         saveMessage(text, sender);
       }
-
       // Save a message to localStorage
       function saveMessage(text, sender) 
       {
@@ -330,9 +329,18 @@
       form.addEventListener('submit', async (e) => 
       {
         e.preventDefault(); // Prevent the default form submission behavior
-        e.stopPropagation(); // Prevent bubbling up in case of other listeners
+        // e.stopPropagation(); // Prevent bubbling up in case of other listeners
 
         const formData = new FormData(form);
+        
+        // const userQuery = input.value.trim();
+
+        // if(userQuery){
+        //   appendMessage(userQuery, "user");
+        //   formData.append("message", userQuery);
+        //   input.value = ""; // Clear input field
+        // }
+        
         const files = Array.from(uploadInput.files);
 
         if (files.length > 0) {
@@ -343,6 +351,7 @@
           });
 
           try {
+             // Send the request to the Django server
             const response = await fetch('/chattopdf/', {
               method: 'POST',
               body: formData,
@@ -353,12 +362,25 @@
 
             if (response.ok) {
               const result = await response.json();
-              appendMessage(`✅ File "${file.name}" uploaded successfully!`, 'bot');
-              appendMessage('Ask your doubt related to this PDF.', 'bot');
-              // Set a flag in localStorage to display the message after reload
-              localStorage.setItem('uploadSuccess', 'true');
+              console.log("Server response ",result);
+              uploadInput.disabled = true;
+              uploadLabel.classList.add('opacity-50', 'cursor-not-allowed');
+
+              // appendMessage(`✅ File "${file.name}" uploaded successfully!`, 'bot');
+              // appendMessage('Ask your doubt related to this PDF.', 'bot');
+              // // Set a flag in localStorage to display the message after reload
+               // Display AI-generated message if available
+              if (result.response) {
+                // sendMessage(result.response);
+                appendMessage(result.response, 'bot');
+                // saveMessage(result.response, 'bot'); // AI message
+              }
+              else {
+                appendMessage('❌ Server did not provide a response.', 'bot');
+              }
+              // localStorage.setItem('uploadSuccess', 'true');
               // Optionally save file name for future use
-              localStorage.setItem('uploadedFileName', file.name);
+              // localStorage.setItem('uploadedFileName', file.name);
             } 
             else {
               appendMessage("❌ Failed to upload the file. Please try again.", 'bot');
@@ -370,17 +392,17 @@
         }
       });
 
-      function sendMessage() {
-        const text = input.value.trim();
+      function sendMessage(bottext) {
+        // const result = response.json();
+        const text = bottext;
         if (!text) return;
         appendMessage(text, 'user');
         input.value = '';
         botReply(text);
       }
-
       function botReply(userText) {
         setTimeout(() => {
-          appendMessage("Echo: " + userText, 'bot');
+          appendMessage("AI" + userText, 'bot');
         }, 700);
       }
 
