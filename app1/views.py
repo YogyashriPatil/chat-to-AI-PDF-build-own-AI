@@ -6,9 +6,6 @@ from django.contrib import messages
 from decouple import config
 from google.genai import Client
 from django.http import JsonResponse
-from django.contrib.auth import logout,authenticate,login
-from django.contrib.auth.decorators import login_required
-from .forms import FileUploadForm
 from django.conf import settings
 from shutil import copyfile
 import os,json
@@ -18,6 +15,14 @@ from pathlib import Path
 from langchain_mistralai import MistralAIEmbeddings
 from qdrant_client import QdrantClient
 from langchain_qdrant import QdrantVectorStore
+from django.contrib.auth import logout,authenticate,login
+from django.contrib.auth.decorators import login_required
+from .forms import FileUploadForm
+
+def firstpage(request):
+    return render(request, "firstpage.html")
+
+    
 def home(request):
     user_email = request.COOKIES.get('user_email', None)  # Retrieve cookie
     is_logged_in = user_email is not None
