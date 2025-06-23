@@ -149,6 +149,24 @@
       }
     });
 
+    document.getElementById("profilePic").addEventListener("change", function (e) {
+    const file = e.target.files[0]; // Get the selected file
+
+    if (file) {
+      const reader = new FileReader();
+
+      // When the file is loaded, update the preview image
+      reader.onload = function (event) {
+        document.getElementById("profilePreview").src = event.target.result;
+      };
+
+      reader.readAsDataURL(file); // Read the file as a Data URL
+    } else {
+      // If no file is selected, revert to the placeholder image
+      document.getElementById("profilePreview").src = "https://i.pravatar.cc/100";
+    }
+  });
+
    </script>
 </body>
 </html>

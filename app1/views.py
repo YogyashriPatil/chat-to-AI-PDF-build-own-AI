@@ -7,7 +7,6 @@ from decouple import config
 from google.genai import Client
 from django.http import JsonResponse
 from django.conf import settings
-from shutil import copyfile
 import os,json
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
@@ -18,7 +17,6 @@ from langchain_qdrant import QdrantVectorStore
 from django.contrib.auth import logout,authenticate,login
 from django.contrib.auth.decorators import login_required
 from .forms import FileUploadForm
-
 def firstpage(request):
     return render(request, "firstpage.html")
 
@@ -73,10 +71,32 @@ def setting(request):
 def home(request):
     user_email = request.COOKIES.get('user_email', None)  # Retrieve cookie
     is_logged_in = user_email is not None
+    # profile_picture=None
 
+    # if user_email:
+    #     try:
+    #         mydb = mysql.connector.connect(
+    #             host="localhost",
+    #             user="root",
+    #             password="",
+    #             database="wtl_project",
+    #         )
+    #         mycur=mydb.cursor()
+    #         mycur.execute("select profile_pic from usermast where uemail='"+user_email+"';")
+    #         print(mycur)
+    #         mydata=mycur.fetchone()
+    #         print(mydata)
+    #         if mydata:
+    #             profile_picture=mydata[0]
+    #     except Exception as e:
+    #         print(f"Database error: {e}")
+    #     finally:
+    #         mycur.close()
+    #         mydb.close()
     return render(request, 'home.html', {
         'is_logged_in': is_logged_in,
-        'user_email': user_email,
+        'user_email': user_email
+        # 'profile_image_url':profile_picture
     })
     return render(request, 'home.html')
 
