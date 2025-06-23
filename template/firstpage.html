@@ -113,16 +113,27 @@
         <li>Save and revisit conversations anytime.</li>
       </ul>
       <div class="mt-10">
-        <a href="{% url 'home' %}" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold text-lg rounded-full shadow-lg hover:from-purple-700 hover:to-pink-600 transition-all duration-300">
+        <a href="{% url 'signin' %}" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold text-lg rounded-full shadow-lg hover:from-purple-700 hover:to-pink-600 transition-all duration-300">
           Try for free ✨
         </a>
       </div>
+      <br>
+      <div class="logout-btn text-lg text-purple-400" onclick="handleAuthClick()" id="auth-button">Sign In</div>
     </div>
   </div>
 
   <!-- 🔁 Particle.js -->
   <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
   <script>
+    function handleAuthClick() {
+      const currentUser = localStorage.getItem('signedInUser');
+      if (currentUser) {
+        localStorage.removeItem('signedInUser');
+        location.reload();
+      } else {
+        window.location.href = "/signin";
+      }
+    }
     const darkParticles = {
       particles: {
         number: { value: 80, density: { enable: true, value_area: 800 } },

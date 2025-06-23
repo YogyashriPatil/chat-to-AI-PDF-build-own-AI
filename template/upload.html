@@ -276,13 +276,30 @@
       messages.scrollTop = messages.scrollHeight;
     }
 
-    function botReply(userText) {
-      setTimeout(() => {
-        appendMessage("Echo: " + userText, 'bot');
-      }, 700);
+    async function botReply(userText) {
+        try {
+          const response = await fetch('/chattopdf/', {
+              method: 'POST',
+              body: JSON.stringify({ message: userText }),
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+              },
+          });
+
+          if (response.ok) {
+              const data = await response.json();
+              appendMessage(data.response || "🤖 No meaningful response received.", 'bot');
+          } else {
+              const error = await response.json();
+              appendMessage(`❌ Error: ${error.error}`, 'bot');
+          }
+      } catch (err) {
+          appendMessage('❌ An error occurred while processing your message.'+err, 'bot');
+      }
     }
 
-    function sendMessage() {
+    async function sendMessage() {
       const text = input.value.trim();
       if (!text) return;
       appendMessage(text, 'user');

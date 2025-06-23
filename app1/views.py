@@ -23,6 +23,51 @@ def firstpage(request):
     return render(request, "firstpage.html")
 
 def setting(request):
+
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        birth_date = request.POST.get('dob')
+        gender = request.POST.get('gender')
+        profile_image = request.FILES.get('profile_image')
+
+        # 👇 Print to terminal
+        print("Username:", username)
+        print("Birth date:", birth_date)
+        print("Gender:", gender)
+        if profile_image:
+            print(profile_image.name)
+
+            image_filename = profile_image.name
+            save_path = os.path.join(settings.MEDIA_ROOT, 'profile_pic')
+            os.makedirs(save_path, exist_ok=True)
+
+            image_path=os.path.join(save_path,image_filename)
+            with open(image_path, 'wb+') as destination:
+                for chunk in profile_image.chunks():
+                    destination.write(chunk)
+
+            print("Image saved to:", save_path)
+            
+        print("Profile image:", profile_image.name)
+        profile_pic=profile_image.name
+        user_email = request.COOKIES.get('user_email')
+        print(user_email)
+        # Connect to MySQL database
+        mydb = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="",
+            database="wtl_project",
+        )
+        mycur=mydb.cursor() 
+        myquery="UPDATE usermast SET uname=%s, birthdate=%s , gender=%s,profile_pic=%s WHERE uemail=%s"
+        print(myquery)
+        mycur.execute(myquery,[username,birth_date,gender,profile_pic,user_email])
+        print(mycur)
+        mydb.commit()
+        mycur.close()
+        mydb.close()
+        # return HttpResponse("Form submitted successfully!")
     return render(request, "setting.html")
 
 def home(request):
@@ -35,7 +80,6 @@ def home(request):
     })
     return render(request, 'home.html')
 
-# @login_required(login_url='signin')
 def chattoai(request):
     api_key=config('CHAT_TO_AI')
     # print(api_key)
@@ -97,7 +141,6 @@ def aboutinfo(request):
 
     return render(request, 'aboutinfo.html')
 
-# @login_required(login_url='signin')
 @csrf_exempt
 def builtownai(request):
     system_prompt_for_own=request.session.get('system_prompt_for_own', None)
@@ -120,9 +163,10 @@ def builtownai(request):
         return JsonResponse({"response": response.text})
     return render(request, "builtownai.html")
 
-# @login_required(login_url='signin')
+vector_store=None
 @csrf_exempt 
 def chattopdf(request):
+    global vector_store
     if request.method == 'POST':
         file = request.FILES.get('file')
         if file:
@@ -132,100 +176,75 @@ def chattopdf(request):
             with open(file_path, 'wb+') as destination:
                 for chunk in file.chunks():
                     destination.write(chunk)
-
-            return JsonResponse({'message': f'File {file.name} uploaded successfully!', 'file_path': file_path})
-
-        return JsonResponse({'error': 'No file provided'}, status=400)
-
-    return render(request, 'upload.html', {'success': "Upload a PDF and ask questions!"})
-    # vector_store = None  # Define vector_store outside the conditions to reuse it later
-    # if request.method == 'POST':
-    #     if request.session.get('pdf_uploaded', False):
-    #         return JsonResponse({
-    #             'response': 'A PDF has already been uploaded. Please ask questions about the current PDF.(if the another pdf uploaded please refresh) '
-    #         }, status=200)
-    #     # Handle File Upload
-    #     file = request.FILES.get('file')  # Check for uploaded file
-    #     if file:
-    #         uploaded_file = request.FILES['file']  # 'file' is the name attribute of the input in your form
-    #         file_path = os.path.join(settings.MEDIA_ROOT, uploaded_file.name)
-    #         file_name = uploaded_file.name
-    #         print(file_name)
-
-    #         with open(file_path, 'wb+') as destination:
-    #             for chunk in uploaded_file.chunks():
-    #                 destination.write(chunk)
-    #         request.session['pdf_uploaded'] = True
-
-    #         media_path = Path(settings.MEDIA_ROOT)
-    #         pdf_path= media_path / file_name;
-    #         print(pdf_path)
-
-    #         # Load and process PDF
-    #         loader=PyPDFLoader(file_path=pdf_path)
-    #         docs=loader.load()
-    #         # print(docs[0])
-
-    #         text_spiltter=RecursiveCharacterTextSplitter(
-    #             chunk_size=1000,
-    #             chunk_overlap=200,
-    #         )
-    #         split_docs=text_spiltter.split_documents(documents=docs)
-            
-    #         api_key =config("MISTRAL_API_KEY") 
-    #         model = "mistral-embed"
-    #         embedder = MistralAIEmbeddings(
-    #             model=model,
-    #             api_key=api_key
-    #         )
-            
-    #         vector_Store=QdrantVectorStore.from_documents(
-    #             collection_name="talk_to_pdf",
-    #             url="http://localhost:6333",
-    #             embedding=embedder,
-    #             documents=[]
-    #         )
-
-    #         vector_Store.add_documents(split_docs)
-    #         print("Injection done")
-
-    #         return JsonResponse({'response':f"Successfully proceed file : {file_name}"})
-    #         # return render(request, 'upload.html', {'success': "Upload a PDF and ask questions!"})
-
-    #     message=request.POST.get('message')
-    #     if message:
-    #         # print(message)
-            
-    #         # if not vector_Store:
-    #         #     return render(request, 'upload.html', {'error': "Please upload a PDF first."})
-                
-    #         # search_result=vector_Store.similarity_search(query=message)
-            
-    #         # print(f"User query: {message}")
-            
-    #         # api_key=config('CHAT_TO_AI')
-    #         # client = Client(api_key=api_key)
-    #         # system_prompt = f"""
-    #         #         Your an AI assistant whose work on the find the answer based on the relevant chunk.
-    #         #         You give the user friendly message.
-    #         #         And the also the answer give to the {search_result}
-    #         #     """
-    #         # response = client.models.generate_content(
-    #         #     model="gemini-1.5-flash",
-    #         #         contents=[
-    #         #             system_prompt,
-    #         #             message
-    #         #         ],
-    #         #     )
-    #         # print(f"AI response: {response.text}")
-    #         # return JsonResponse({"response": response.text})
-    #         response_text = f"AI response to your query: {message}"
-    #         return JsonResponse({'response': response_text}, status=200)
-
-    #     return JsonResponse({'error': 'No file or message provided.'}, status=400)
            
-    
+            file_name=file.name
+            print(file_name)
+            try:
+                media_path = Path(settings.MEDIA_ROOT)
+                pdf_path= media_path / file_name;
+                print(pdf_path)
 
+                #Load and process PDF
+                loader=PyPDFLoader(file_path=pdf_path)
+                docs=loader.load()
+                # print(docs[0])
+                text_spiltter=RecursiveCharacterTextSplitter(
+                    chunk_size=1000,
+                    chunk_overlap=200,
+                )
+
+                split_docs=text_spiltter.split_documents(documents=docs)
+                api_key =config("MISTRAL_API_KEY") 
+                model = "mistral-embed"
+                embedder = MistralAIEmbeddings(
+                    model=model,
+                    api_key=api_key
+                )
+
+                vector_store=QdrantVectorStore.from_documents(
+                    collection_name="talk_to_pdf",
+                    url="http://localhost:6333",
+                    embedding=embedder,
+                    documents=[]
+                )
+                return JsonResponse({'message': f'File "{file.name}" uploaded and processed successfully!'}, status=200)
+            except Exception as e:
+                return JsonResponse({'error': f'Error processing PDF: {str(e)}'}, status=500)
+        # handle querying
+
+        elif 'application/json' in request.content_type:
+            data=json.loads(request.body)
+            message=data.get('message')
+            if not message:
+                    return JsonResponse({'error': 'No message provided'}, status=400)
+
+            if not vector_store:
+                return JsonResponse({'error': 'No PDF uploaded or processed yet.'}, status=400)
+            
+            
+            search_result=vector_store.similarity_search(query=message)
+            retrieved_text = "\n".join([result.page_content for result in search_result])
+            api_key=config('CHAT_TO_AI')
+            client = Client(api_key=api_key)
+            system_prompt = f"""
+                Your an AI assistant whose work on the find the answer based on the relevant chunk.
+                You give the user friendly message.
+                The answer you give the minumum but the add the proper words that fulfill the answer 
+                the user ask about the related question.
+                And the also the answer give to the {search_result}.
+                Based on this text: {retrieved_text}, answer the user's query: {message}
+            """
+            response = client.models.generate_content(
+                model="gemini-1.5-flash",
+                    contents=[
+                        system_prompt,
+                            message
+                        ],
+                )
+            print(f"AI response: {response.text}")
+            return JsonResponse({'response': response.text}, status=200)
+    return render(request, 'upload.html', {'success': "Upload a PDF and ask questions!"})
+    
 @csrf_exempt
 def sign_in(request):
     if request.method == 'POST':
@@ -322,11 +341,9 @@ def signup(request):
 
     return render(request, 'signup.html')
 
-# @login_required(login_url='signin')
 def aboutus(request):
     return render(request, 'aboutus.html')
 
-# @login_required(login_url='signin')
 def custom_logout(request):
     response = redirect('/signin/')
     response.delete_cookie('user_email')  # Clear cookie
