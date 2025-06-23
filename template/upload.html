@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Talk to PDF</title>
+  <title>Talk to AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -39,6 +39,7 @@
       position: relative;
       user-select: none;
     }
+
     header::after {
       content: '';
       position: absolute;
@@ -51,6 +52,7 @@
       border-radius: 2px;
       animation: moveLine 3s linear infinite;
     }
+
     @keyframes moveLine {
       0% { transform: translateX(-50%) translateX(0); }
       50% { transform: translateX(-50%) translateX(5px); }
@@ -82,14 +84,15 @@
       gap: 0.75rem;
     }
 
-    /* Custom scrollbar for chat messages */
     #messages::-webkit-scrollbar {
       width: 8px;
     }
+
     #messages::-webkit-scrollbar-thumb {
       background-color: #9333ea;
       border-radius: 8px;
     }
+
     #messages::-webkit-scrollbar-track {
       background: transparent;
     }
@@ -121,6 +124,7 @@
       box-shadow: 0 0 15px #9333ea;
       text-align: right;
     }
+
     .user-message p:first-child {
       font-weight: 600;
       font-size: 0.75rem;
@@ -136,6 +140,7 @@
       box-shadow: 0 0 15px #06b6d4;
       text-align: left;
     }
+
     .bot-message p:first-child {
       font-weight: 600;
       font-size: 0.75rem;
@@ -197,29 +202,6 @@
       box-shadow: 0 0 15px #ec4899;
     }
 
-    #upload-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      color: #fff;
-      border: 2px dashed #6b21a8;
-      border-radius: 9999px;
-      width: 40px;
-      height: 40px;
-      background-color: transparent;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-
-    #upload-btn:hover {
-      background-color: #6b21a8;
-    }
-
-    #upload-input {
-      display: none;
-    }
-
     .shape {
       position: fixed;
       border: 2px solid rgba(255 255 255 / 0.15);
@@ -252,7 +234,7 @@
   </style>
 </head>
 <body>
-  <a href="{%url 'home' %}" class="fixed top-4 left-4 z-50 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white font-bold py-2 px-6 rounded-full shadow-lg hover:shadow-pink-500 transition duration-300">
+  <a href="{% url 'home' %}" class="fixed top-4 left-4 z-50 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white font-bold py-2 px-6 rounded-full shadow-lg hover:shadow-pink-500 transition duration-300">
     ← Back to Home
   </a>
 
@@ -261,14 +243,12 @@
     <section id="chat-container">
       <div id="messages"></div>
       <div id="input-area">
-        <form method="post" enctype="multipart/form-data" id="file-upload-form" class="flex items-center gap-2">
-          {% csrf_token %}
-          <label for="upload-input" id="upload-btn" title="Upload File">📎</label>
-          <!-- {{ form.file }} -->
-          <input type="file" name="file" id="upload-input" multiple />
-          <textarea id="user-input" name="message" placeholder="Type your message here..." autocomplete="off" spellcheck="false" rows="1" cols="50" ></textarea>
-          <button id="send-btn" title="Send message" ondblclick="sendMessageofai()">🚀</button>
-        </form>
+        <label for="file-upload" class="cursor-pointer bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 text-white font-semibold px-4 py-2 rounded-full shadow-md hover:shadow-pink-500 transition duration-300">
+          📎 Upload
+        </label>
+        <input type="file" id="file-upload" accept=".pdf,.doc,.docx" class="hidden" />
+        <textarea id="user-input" placeholder="Type your message here..." autocomplete="off" spellcheck="false" rows="1"></textarea>
+        <button id="send-btn" title="Send message">🚀</button>
       </div>
     </section>
   </main>
@@ -280,179 +260,83 @@
   <div class="shape triangle" style="top: 30%; left: 30%;"></div>
   <div class="shape" style="bottom: 10%; right: 12%; width: 90px; height: 90px;"></div>
   <div class="shape ellipse" style="top: 25%; right: 20%; width: 160px; height: 100px;"></div>
-  
-    <script>
-      const messages = document.getElementById('messages');
-      const input = document.getElementById('user-input');
-      const sendBtn = document.getElementById('send-btn');
-      const uploadInput = document.getElementById('upload-input');
-      const form = document.getElementById('file-upload-form');
 
-      function appendMessage(text, sender = 'user') 
-      {
-        const msgDiv = document.createElement('div');
-        msgDiv.classList.add('message');
-        msgDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
-        msgDiv.innerHTML = `<p>${sender === 'user' ? 'You' : 'AI'}</p><p>${text}</p>`;
-        messages.appendChild(msgDiv);
-        messages.scrollTop = messages.scrollHeight;
-        // Save the message to localStorage
-        saveMessage(text, sender);
+  <script>
+    const messages = document.getElementById('messages');
+    const input = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const fileInput = document.getElementById('file-upload');
+
+    function appendMessage(text, sender = 'user') {
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message');
+      msgDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+      msgDiv.innerHTML = `<p>${sender === 'user' ? 'You' : 'AI'}</p><p>${text}</p>`;
+      messages.appendChild(msgDiv);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function botReply(userText) {
+      setTimeout(() => {
+        appendMessage("Echo: " + userText, 'bot');
+      }, 700);
+    }
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      appendMessage(text, 'user');
+      input.value = '';
+      botReply(text);
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
       }
-      // Save a message to localStorage
-      function saveMessage(text, sender) 
-      {
-        const storedMessages = JSON.parse(localStorage.getItem('chatMessages')) || [];
-        storedMessages.push({ text, sender });
-        localStorage.setItem('chatMessages', JSON.stringify(storedMessages));
-      }
-      // Load messages from localStorage
-      function loadMessages() 
-      {
-        const storedMessages = JSON.parse(localStorage.getItem('chatMessages')) || [];
-        if (storedMessages.length === 0) {
-          // Show the default bot message
-          appendMessage("Upload a PDF you want to chat with.", 'bot');
-        } else {
-          storedMessages.forEach(msg => {
-            appendMessage(msg.text, msg.sender);
-          });
+    });
+
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = input.scrollHeight + 'px';
+    });
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      appendMessage(`📄 Uploaded file: ${file.name}`, 'user');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try{
+        const response = await fetch('/chattopdf/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+        },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          appendMessage(`✅ ${data.message}`, 'bot');
+        }
+        else 
+        {
+          const error = await response.json();
+          appendMessage(`❌ Error: ${error.error}`, 'bot');
         }
       }
-
-      // Clear chat messages from localStorage
-      function clearChatMessages() {
-        localStorage.removeItem('chatMessages');
-        console.log("Chat messages cleared.");
+      catch (err) {
+        appendMessage('❌ An error occurred during the upload.', 'bot');
       }
-
-      form.addEventListener('submit', async (e) => 
-      {
-        e.preventDefault(); // Prevent the default form submission behavior
-        // e.stopPropagation(); // Prevent bubbling up in case of other listeners
-
-        const formData = new FormData(form);
-        
-        // const userQuery = input.value.trim();
-
-        // if(userQuery){
-        //   appendMessage(userQuery, "user");
-        //   formData.append("message", userQuery);
-        //   input.value = ""; // Clear input field
-        // }
-        
-        const files = Array.from(uploadInput.files);
-
-        if (files.length > 0) {
-
-          files.forEach((file) => {
-            console.log("File selected:", file.name);
-            appendMessage(`📎 Uploaded: ${file.name}`, 'user');
-          });
-
-          try {
-             // Send the request to the Django server
-            const response = await fetch('/chattopdf/', {
-              method: 'POST',
-              body: formData,
-              headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-              },
-            });
-
-            if (response.ok) {
-              const result = await response.json();
-              console.log("Server response ",result);
-              uploadInput.disabled = true;
-              uploadLabel.classList.add('opacity-50', 'cursor-not-allowed');
-
-              // appendMessage(`✅ File "${file.name}" uploaded successfully!`, 'bot');
-              // appendMessage('Ask your doubt related to this PDF.', 'bot');
-              // // Set a flag in localStorage to display the message after reload
-               // Display AI-generated message if available
-              if (result.response) {
-                // sendMessage(result.response);
-                appendMessage(result.response, 'bot');
-                // saveMessage(result.response, 'bot'); // AI message
-              }
-              else {
-                appendMessage('❌ Server did not provide a response.', 'bot');
-              }
-              // localStorage.setItem('uploadSuccess', 'true');
-              // Optionally save file name for future use
-              // localStorage.setItem('uploadedFileName', file.name);
-            } 
-            else {
-              appendMessage("❌ Failed to upload the file. Please try again.", 'bot');
-            }
-          } 
-          catch (error) {
-            appendMessage(" ⚠️ An error occurred during file upload.", 'bot');
-          }
-        }
-      });
-
-      function sendMessage(bottext) {
-        // const result = response.json();
-        const text = bottext;
-        if (!text) return;
-        appendMessage(text, 'user');
-        input.value = '';
-        botReply(text);
-      }
-      function botReply(userText) {
-        setTimeout(() => {
-          appendMessage("AI" + userText, 'bot');
-        }, 700);
-      }
-
-      input.addEventListener('input', () => {
-        input.style.height = 'auto';
-        input.style.height = input.scrollHeight + 'px';
-      });
-
-
-      sendBtn.addEventListener('click', sendMessage);
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          sendMessage();
-        }
-      });
-
-
-      uploadInput.addEventListener('change', () => {
-        const files = Array.from(uploadInput.files);
-        console.log("Selected files:", files); 
-        if (files.length > 0) {
-          files.forEach((file) => {
-            console.log("Appending message for file:", file.name);
-            appendMessage(`📎 Upload successful : ${file.name} (${files.length} file${files.length > 1 ? 's' : ''})`, 'user');
-          });
-          document.getElementById('file-upload-form').submit();
-        }
-      });
-      function loadMessages() {
-        const storedMessages = JSON.parse(localStorage.getItem('chatMessages')) || [];
-        if (storedMessages.length === 0) {
-          // If no messages exist, show the default bot message
-          const defaultMessage = "Upload a PDF you want to chat with.";
-          appendMessage(defaultMessage, 'bot');
-        } else {
-          storedMessages.forEach(msg => {
-            appendMessage(msg.text, msg.sender);
-          });
-        }
-      }
-      window.addEventListener('load', () => 
-      {
-        const uploadSuccess = localStorage.getItem('uploadSuccess');
-        if (uploadSuccess) {
-          appendMessage('✅ Your PDF was successfully uploaded!', 'bot');
-          appendMessage('🤖 Ask your doubt related to this PDF.', 'bot');
-          localStorage.removeItem('uploadSuccess'); // Clear the flag
-        }
-      });
-    </script>
-  </body>
+      // setTimeout(() => {
+      //   appendMessage(`AI received your file: ${file.name}. (Processing feature coming soon!)`, 'bot');
+      // }, 1000);
+    });
+  </script>
+</body>
 </html>

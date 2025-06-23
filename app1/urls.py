@@ -14,6 +14,13 @@ urlpatterns = [
     path('chattopdf/', views.chattopdf, name='chattopdf'),
     path('builtownai/', views.builtownai, name='builtownai'),
     path('aboutus/', views.aboutus,name="aboutus"),
+    path('setting/', views.setting,name="setting"),
     path('aboutinfo/', views.aboutinfo,name="aboutinfo"),
     # path('home/', views.home, name='home'),
 ]
+
+from django.conf import settings
+from django.conf.urls.static import static
+
+if settings.DEBUG:  # Only serve media files in development
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

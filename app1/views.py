@@ -22,7 +22,9 @@ from .forms import FileUploadForm
 def firstpage(request):
     return render(request, "firstpage.html")
 
-    
+def setting(request):
+    return render(request, "setting.html")
+
 def home(request):
     user_email = request.COOKIES.get('user_email', None)  # Retrieve cookie
     is_logged_in = user_email is not None
@@ -121,93 +123,108 @@ def builtownai(request):
 # @login_required(login_url='signin')
 @csrf_exempt 
 def chattopdf(request):
-    vector_store = None  # Define vector_store outside the conditions to reuse it later
     if request.method == 'POST':
-        if request.session.get('pdf_uploaded', False):
-            return JsonResponse({
-                'response': 'A PDF has already been uploaded. Please ask questions about the current PDF.(if the another pdf uploaded please refresh) '
-            }, status=200)
-        # Handle File Upload
-        file = request.FILES.get('file')  # Check for uploaded file
+        file = request.FILES.get('file')
         if file:
-            uploaded_file = request.FILES['file']  # 'file' is the name attribute of the input in your form
-            file_path = os.path.join(settings.MEDIA_ROOT, uploaded_file.name)
-            file_name = uploaded_file.name
-            print(file_name)
-
+            file_path = os.path.join(settings.MEDIA_ROOT, file.name)
+            
+            # Save the file to the media folder
             with open(file_path, 'wb+') as destination:
-                for chunk in uploaded_file.chunks():
+                for chunk in file.chunks():
                     destination.write(chunk)
-            request.session['pdf_uploaded'] = True
 
-            media_path = Path(settings.MEDIA_ROOT)
-            pdf_path= media_path / file_name;
-            print(pdf_path)
+            return JsonResponse({'message': f'File {file.name} uploaded successfully!', 'file_path': file_path})
 
-            # Load and process PDF
-            loader=PyPDFLoader(file_path=pdf_path)
-            docs=loader.load()
-            # print(docs[0])
+        return JsonResponse({'error': 'No file provided'}, status=400)
 
-            text_spiltter=RecursiveCharacterTextSplitter(
-                chunk_size=1000,
-                chunk_overlap=200,
-            )
-            split_docs=text_spiltter.split_documents(documents=docs)
-            
-            api_key =config("MISTRAL_API_KEY") 
-            model = "mistral-embed"
-            embedder = MistralAIEmbeddings(
-                model=model,
-                api_key=api_key
-            )
-            
-            vector_Store=QdrantVectorStore.from_documents(
-                collection_name="talk_to_pdf",
-                url="http://localhost:6333",
-                embedding=embedder,
-                documents=[]
-            )
-
-            vector_Store.add_documents(split_docs)
-            print("Injection done")
-
-            return JsonResponse({'response':f"Successfully proceed file : {file_name}"})
-            # return render(request, 'upload.html', {'success': "Upload a PDF and ask questions!"})
-
-        message=request.POST.get('message')
-        if message:
-            # print(message)
-            
-            # if not vector_Store:
-            #     return render(request, 'upload.html', {'error': "Please upload a PDF first."})
-                
-            # search_result=vector_Store.similarity_search(query=message)
-            
-            # print(f"User query: {message}")
-            
-            # api_key=config('CHAT_TO_AI')
-            # client = Client(api_key=api_key)
-            # system_prompt = f"""
-            #         Your an AI assistant whose work on the find the answer based on the relevant chunk.
-            #         You give the user friendly message.
-            #         And the also the answer give to the {search_result}
-            #     """
-            # response = client.models.generate_content(
-            #     model="gemini-1.5-flash",
-            #         contents=[
-            #             system_prompt,
-            #             message
-            #         ],
-            #     )
-            # print(f"AI response: {response.text}")
-            # return JsonResponse({"response": response.text})
-            response_text = f"AI response to your query: {message}"
-            return JsonResponse({'response': response_text}, status=200)
-
-        return JsonResponse({'error': 'No file or message provided.'}, status=400)
-           
     return render(request, 'upload.html', {'success': "Upload a PDF and ask questions!"})
+    # vector_store = None  # Define vector_store outside the conditions to reuse it later
+    # if request.method == 'POST':
+    #     if request.session.get('pdf_uploaded', False):
+    #         return JsonResponse({
+    #             'response': 'A PDF has already been uploaded. Please ask questions about the current PDF.(if the another pdf uploaded please refresh) '
+    #         }, status=200)
+    #     # Handle File Upload
+    #     file = request.FILES.get('file')  # Check for uploaded file
+    #     if file:
+    #         uploaded_file = request.FILES['file']  # 'file' is the name attribute of the input in your form
+    #         file_path = os.path.join(settings.MEDIA_ROOT, uploaded_file.name)
+    #         file_name = uploaded_file.name
+    #         print(file_name)
+
+    #         with open(file_path, 'wb+') as destination:
+    #             for chunk in uploaded_file.chunks():
+    #                 destination.write(chunk)
+    #         request.session['pdf_uploaded'] = True
+
+    #         media_path = Path(settings.MEDIA_ROOT)
+    #         pdf_path= media_path / file_name;
+    #         print(pdf_path)
+
+    #         # Load and process PDF
+    #         loader=PyPDFLoader(file_path=pdf_path)
+    #         docs=loader.load()
+    #         # print(docs[0])
+
+    #         text_spiltter=RecursiveCharacterTextSplitter(
+    #             chunk_size=1000,
+    #             chunk_overlap=200,
+    #         )
+    #         split_docs=text_spiltter.split_documents(documents=docs)
+            
+    #         api_key =config("MISTRAL_API_KEY") 
+    #         model = "mistral-embed"
+    #         embedder = MistralAIEmbeddings(
+    #             model=model,
+    #             api_key=api_key
+    #         )
+            
+    #         vector_Store=QdrantVectorStore.from_documents(
+    #             collection_name="talk_to_pdf",
+    #             url="http://localhost:6333",
+    #             embedding=embedder,
+    #             documents=[]
+    #         )
+
+    #         vector_Store.add_documents(split_docs)
+    #         print("Injection done")
+
+    #         return JsonResponse({'response':f"Successfully proceed file : {file_name}"})
+    #         # return render(request, 'upload.html', {'success': "Upload a PDF and ask questions!"})
+
+    #     message=request.POST.get('message')
+    #     if message:
+    #         # print(message)
+            
+    #         # if not vector_Store:
+    #         #     return render(request, 'upload.html', {'error': "Please upload a PDF first."})
+                
+    #         # search_result=vector_Store.similarity_search(query=message)
+            
+    #         # print(f"User query: {message}")
+            
+    #         # api_key=config('CHAT_TO_AI')
+    #         # client = Client(api_key=api_key)
+    #         # system_prompt = f"""
+    #         #         Your an AI assistant whose work on the find the answer based on the relevant chunk.
+    #         #         You give the user friendly message.
+    #         #         And the also the answer give to the {search_result}
+    #         #     """
+    #         # response = client.models.generate_content(
+    #         #     model="gemini-1.5-flash",
+    #         #         contents=[
+    #         #             system_prompt,
+    #         #             message
+    #         #         ],
+    #         #     )
+    #         # print(f"AI response: {response.text}")
+    #         # return JsonResponse({"response": response.text})
+    #         response_text = f"AI response to your query: {message}"
+    #         return JsonResponse({'response': response_text}, status=200)
+
+    #     return JsonResponse({'error': 'No file or message provided.'}, status=400)
+           
+    
 
 @csrf_exempt
 def sign_in(request):
