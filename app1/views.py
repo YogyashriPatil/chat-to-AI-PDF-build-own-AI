@@ -71,16 +71,15 @@ def setting(request):
 def home(request):
     user_email = request.COOKIES.get('user_email', None)  # Retrieve cookie
     is_logged_in = user_email is not None
-    # profile_picture=None
+    profile_picture=None
 
     # if user_email:
-    #     try:
-    #         mydb = mysql.connector.connect(
-    #             host="localhost",
-    #             user="root",
-    #             password="",
-    #             database="wtl_project",
-    #         )
+    #     mydb = mysql.connector.connect(
+    #         host="localhost",
+    #         user="root",
+    #         password="",
+    #         database="wtl_project",
+    #     )
     #         mycur=mydb.cursor()
     #         mycur.execute("select profile_pic from usermast where uemail='"+user_email+"';")
     #         print(mycur)
