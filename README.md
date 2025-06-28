@@ -9,21 +9,21 @@
 ### 1. 💬 Chat with AI  
 Simple and intuitive AI chat for instant conversations.
 
-![Chat with AI](./assets/chat-with-ai.png)
-
+![Chat with AI](./template/chat_demo.png)
 ---
 
 ### 2. 🛠️ Build Your Own AI  
 Train your own assistant using custom content you provide.
 
-![Build Your Own AI](./assets/build-own-ai.png)
+![Build Your Own AI](./template/making_ai.png)
+![Build Your Own AI](./template/own_ai_demo.png)
 
 ---
 
 ### 3. 📄 Chat with PDF (RAG)  
 Upload a PDF and ask questions — powered by Retrieval-Augmented Generation.
 
-![Chat with PDF](./assets/chat-with-pdf.png)
+![Chat with PDF](./template/pdf_Demo.png)
 
 ---
 
