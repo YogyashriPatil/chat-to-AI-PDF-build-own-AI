@@ -24,7 +24,7 @@ Train your own assistant using custom content you provide.
 ### 3. 📄 Chat with PDF (RAG)  
 Upload a PDF and ask questions — powered by Retrieval-Augmented Generation.
 
-![Chat with PDF](./template/pdf_Demo.png)
+![Chat with PDF](./template/pdf_demo.png)
 
 ---
 
