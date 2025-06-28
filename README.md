@@ -10,13 +10,14 @@
 Simple and intuitive AI chat for instant conversations.
 
 ![Chat with AI](./template/chat_demo.png)
+
 ---
 
 ### 2. 🛠️ Build Your Own AI  
 Train your own assistant using custom content you provide.
 
-![Build Your Own AI](./template/making_ai.png)
-![Build Your Own AI](./template/own_ai_demo.png)
+![Making Your Own AI](./template/making_ai.png)  
+![Own AI Demo](./template/own_ai_demo.png)
 
 ---
 
@@ -35,5 +36,5 @@ Upload a PDF and ask questions — powered by Retrieval-Augmented Generation.
 
 ---
 
-## 🔗 Visit My Work  
-Check out more at: [github.com/YogyashriPatil](https://github.com/YogyashriPatil)
+## 📱 Connect with Me  
+🐦 Twitter: [@YogyashriPatil](https://x.com/YogyashriP)
